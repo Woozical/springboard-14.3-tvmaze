@@ -20,17 +20,61 @@
 async function searchShows(query) {
   // TODO: Make an ajax request to the searchShows api.  Remove
   // hard coded data.
-
-  return [
-    {
-      id: 1767,
-      name: "The Bletchley Circle",
-      summary: "<p><b>The Bletchley Circle</b> follows the journey of four ordinary women with extraordinary skills that helped to end World War II.</p><p>Set in 1952, Susan, Millie, Lucy and Jean have returned to their normal lives, modestly setting aside the part they played in producing crucial intelligence, which helped the Allies to victory and shortened the war. When Susan discovers a hidden code behind an unsolved murder she is met by skepticism from the police. She quickly realises she can only begin to crack the murders and bring the culprit to justice with her former friends.</p>",
-      image: "http://static.tvmaze.com/uploads/images/medium_portrait/147/369403.jpg"
+  try {
+    const res = await axios.get('https://api.tvmaze.com/search/shows',
+      { params: {q: query}, 
+        timeout: 10000}
+      );
+    console.log(res);
+    const result = [];
+    for (let obj of res.data){
+      const {id, name, summary, image} = obj.show;
+      result.push({id, name, summary, image});
     }
-  ]
+    return result;
+  } catch (err) {
+    alert(`Could not reach TV Maze API at this time. Error: ${err.message}`)
+    return [];
+  }
 }
 
+
+/** Given a show ID, return list of episodes:
+ *      { id, name, season, number }
+ */
+async function getEpisodes(showID){
+  const url = `https://api.tvmaze.com/shows/${showID}/episodes`;
+  try {
+    const res = await axios.get(url, {timeout: 10000});
+    console.log(res);
+    const result = [];
+
+    for (let obj of res.data){
+      const {id, name, season, number} = obj;
+      result.push({id, name, season, number});
+    }
+    console.log('Episode Array', result);
+    return result;
+  } catch (err) {
+    alert(`Could not reach TV Maze API at this time. Error: ${err.message}`)
+    return [];
+  }
+}
+
+
+function populateEpisodes(episodes){
+  console.log('Populating episodes...')
+  const $episodeList = $('#episodes-list');
+  $episodeList.empty();
+  $('#episodes-area').show();
+  for (let episode of episodes){
+    const $li = $(
+      `<li data-episode-id="${episode.id}">S${episode.season}.E${episode.number} - "${episode.name}"</li>`
+    )
+    $episodeList.append($li);
+  }
+
+}
 
 
 /** Populate shows list:
@@ -40,14 +84,22 @@ async function searchShows(query) {
 function populateShows(shows) {
   const $showsList = $("#shows-list");
   $showsList.empty();
-
+  const missingImg = 'https://tinyurl.com/tv-missing';
   for (let show of shows) {
+    let imgSrc;
+    try{
+      imgSrc = show.image.medium;
+    } catch {
+      imgSrc = missingImg;
+    }
     let $item = $(
       `<div class="col-md-6 col-lg-3 Show" data-show-id="${show.id}">
          <div class="card" data-show-id="${show.id}">
            <div class="card-body">
              <h5 class="card-title">${show.name}</h5>
+             <img class="card-img-top" src="${imgSrc}">
              <p class="card-text">${show.summary}</p>
+             <button>Episodes</button>
            </div>
          </div>
        </div>
@@ -65,7 +117,6 @@ function populateShows(shows) {
 
 $("#search-form").on("submit", async function handleSearch (evt) {
   evt.preventDefault();
-
   let query = $("#search-query").val();
   if (!query) return;
 
@@ -77,14 +128,14 @@ $("#search-form").on("submit", async function handleSearch (evt) {
 });
 
 
-/** Given a show ID, return list of episodes:
- *      { id, name, season, number }
- */
+// Handle User Clicks in the show list area
+// Used for clicking on the Episodes button of each show card
 
-async function getEpisodes(id) {
-  // TODO: get episodes from tvmaze
-  //       you can get this by making GET request to
-  //       http://api.tvmaze.com/shows/SHOW-ID-HERE/episodes
+$('#shows-list').on('click', 'button', async function(e){
+  e.preventDefault();
+  const showID = $(this).parent().parent().attr('data-show-id');
+  let episodes = await getEpisodes(showID);
 
-  // TODO: return array-of-episode-info, as described in docstring above
-}
+  populateEpisodes(episodes);
+
+})
