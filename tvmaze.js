@@ -139,3 +139,49 @@ $('#shows-list').on('click', 'button', async function(e){
   populateEpisodes(episodes);
 
 })
+
+
+
+/* Testing */
+
+async function testSearch (query='Better Call Saul'){
+  let results = await searchShows(query);
+  console.log(results);
+  let outcome = 'All data present';
+  let count = 0;
+  for (let obj of results){
+    console.log(obj);
+    for (let key of Object.keys(obj)){
+      console.log(key, obj[key]);
+      if (obj[key] === undefined){
+        count++;
+        outcome = (`Missing ${count} keys in objs`)
+      }
+    }
+  }
+
+  console.log('All data retrieved intact')
+}
+
+function testDisplayShow(){
+
+  let sampleShow = {
+    id : 1,
+    name : 'Ice Guys',
+    summary : 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Sed sint et ab inventore reprehenderit assumenda nobis numquam asperiores! Molestiae deserunt reprehenderit officiis obcaecati asperiores mollitia vitae est at aperiam cupiditate!',
+    image : null
+  }
+
+  populateShows([sampleShow, sampleShow, sampleShow, sampleShow]);
+
+}
+
+function testDisplayEpisode(){
+  let sampleEpisode = {
+    name : 'Pilot',
+    season: 1,
+    number: 1,
+    id: 1
+  }
+  populateEpisodes([sampleEpisode, sampleEpisode, sampleEpisode])
+}
